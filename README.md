@@ -10,3 +10,5 @@ Send command to device:
   }
 }
 ```
+
+Requires [mqtt_refresh](https://github.com/r00tat/homeassistant_mqtt_refresh) to work.
