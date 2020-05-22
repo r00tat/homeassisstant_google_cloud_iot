@@ -1,0 +1,8 @@
+{
+  "domain": "google_cloud_iot",
+  "name": "Google IoT",
+  "documentation": "",
+  "dependencies": ["mqtt"],
+  "requirements": [],
+  "codeowners": ["@r00tat"]
+}
