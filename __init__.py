@@ -7,11 +7,11 @@ import yaml
 DOMAIN = 'google_cloud_iot'
 
 # List of integration names (string) your integration depends upon.
-DEPENDENCIES = ['mqtt']
+DEPENDENCIES = ['mqtt', 'mqtt_refresh']
 
 DEFAULT_TOPIC = 'home-assistant/hello_mqtt'
 
-log = logging.getLogger("iot")
+log = logging.getLogger(DOMAIN)
 
 
 def setup(hass, config):
@@ -49,8 +49,10 @@ def setup_iot(hass, config):
     """ run iot setup """
     mqtt = hass.components.mqtt
     domain_config = config[DOMAIN]
-    iot_topic = domain_config.get("topic", DEFAULT_TOPIC)
-    iot_config_topic = domain_config.get("topics", {}).get('config')
+    config_topics = domain_config.get("topics", {})
+    iot_commands_topic = config_topics.get("commands", DEFAULT_TOPIC)
+    iot_config_topic = config_topics.get('config')
+    iot_events_topic = config_topics.get('events')
     entity_id = '{}.last_message'.format(DOMAIN)
 
     # Listener to be called when we receive a message.
@@ -76,8 +78,8 @@ def setup_iot(hass, config):
         except:  # noqa
             log.exception("failed to parse iot message %s", msg.payload)
 
-    log.info("subscribing to iot topic %s", iot_topic)
-    mqtt.subscribe(iot_topic, iot_message)
+    log.info("subscribing to iot topic %s", iot_commands_topic)
+    mqtt.subscribe(iot_commands_topic, iot_message)
 
     if iot_config_topic:
         log.info("subscribing to iot config topic %s", iot_config_topic)
@@ -87,12 +89,12 @@ def setup_iot(hass, config):
     hass.states.set(entity_id, 'No messages')
 
     # Service to publish a message on MQTT.
-    def set_state_service(call):
+    def publish_event_service(call):
         """Service to send a message."""
-        mqtt.publish(topic, call.data.get('new_state'))
+        mqtt.publish(iot_events_topic, call.data.get('new_state'))
 
     # Register our service with Home Assistant.
-    hass.services.register(DOMAIN, 'set_state', set_state_service)
+    hass.services.register(DOMAIN, 'publish_event', publish_event_service)
 
     # Return boolean to indicate that initialization was successfully.
     return True
