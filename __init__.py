@@ -40,6 +40,7 @@ def config_message_factory(hass, config):
             pass
         if data:
             log.info("new dynamic iot config: %s", json.dumps(data))
+            hass.bus.fire("{}_config".format(DOMAIN), data)
             hass.states.set('{}.dynamic_config'.format(DOMAIN), json.dumps(data))
 
     return iot_config_message
@@ -63,10 +64,11 @@ def setup_iot(hass, config):
         log.info("received iot message: %s", msg.payload)
         try:
             data = json.loads(msg.payload)
+            hass.bus.fire("{}_message".format(DOMAIN), data)
             service = data.get("service", "unkown")
             if data.get("domain"):
                 domain = data.get("domain")
-            else:
+            else if "." in service:
                 service_split = service.split(".")
                 domain = service_split[0]
                 service = service_split[1]
