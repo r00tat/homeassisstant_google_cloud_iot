@@ -32,11 +32,11 @@ def config_message_factory(hass, config):
         data = None
         try:
             data = json.loads(msg.payload)
-        except:
+        except:  # noqa
             pass
         try:
             data = yaml.safe_load(msg.payload)
-        except:
+        except:  # noqa
             pass
         if data:
             log.info("new dynamic iot config: %s", json.dumps(data))
@@ -68,7 +68,7 @@ def setup_iot(hass, config):
             service = data.get("service", "unkown")
             if data.get("domain"):
                 domain = data.get("domain")
-            else if "." in service:
+            elif "." in service:
                 service_split = service.split(".")
                 domain = service_split[0]
                 service = service_split[1]
