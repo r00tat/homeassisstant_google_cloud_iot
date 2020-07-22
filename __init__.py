@@ -23,6 +23,19 @@ def setup(hass, config):
         return False
 
 
+def parse_payload(payload):
+    """ parse message payload """
+    data = None
+    try:
+        data = json.loads(payload)
+    except:  # noqa
+        try:
+            data = yaml.safe_load(payload)
+        except:  # noqa
+            pass
+    return data
+
+
 def config_message_factory(hass, config):
     """ factory method for config message """
 
@@ -30,14 +43,7 @@ def config_message_factory(hass, config):
         """ got iot message """
         log.info("received iot config message: %s", msg.payload)
         data = None
-        try:
-            data = json.loads(msg.payload)
-        except:  # noqa
-            pass
-        try:
-            data = yaml.safe_load(msg.payload)
-        except:  # noqa
-            pass
+        data = parse_payload(msg.payload)
         if data:
             log.info("new dynamic iot config: %s", json.dumps(data))
             hass.bus.fire("{}_config".format(DOMAIN), data)
@@ -62,23 +68,29 @@ def setup_iot(hass, config):
     def iot_message(msg):
         """ iot message received """
         log.info("received iot message: %s", msg.payload)
+        data = parse_payload(msg.payload)
+
         try:
-            data = json.loads(msg.payload)
-            hass.bus.fire("{}_message".format(DOMAIN), data)
-            service = data.get("service", "unkown")
-            if data.get("domain"):
-                domain = data.get("domain")
-            elif "." in service:
-                service_split = service.split(".")
-                domain = service_split[0]
-                service = service_split[1]
+            if data:
+                hass.bus.fire("{}_message".format(DOMAIN), data)
+                service = data.get("service", "unkown")
+                if data.get("domain"):
+                    domain = data.get("domain")
+                elif "." in service:
+                    service_split = service.split(".")
+                    domain = service_split[0]
+                    service = service_split[1]
+        except:  # noqa
+            log.exception("failed to parse iot message %s", msg.payload)
+
+        try:
             if hass.services.has_service(domain, service):
                 log.info("calling service %s.%s with data %s", domain, service, data.get("data"))
                 hass.services.call(domain, service, data.get("data"))
             else:
                 log.warn("service %s.%s not found!", domain, service)
         except:  # noqa
-            log.exception("failed to parse iot message %s", msg.payload)
+            log.exception("failed to call service %s", msg.payload)
 
     log.info("subscribing to iot topic %s", iot_commands_topic)
     mqtt.subscribe(iot_commands_topic, iot_message)
