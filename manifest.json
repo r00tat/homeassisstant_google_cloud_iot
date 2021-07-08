@@ -1,6 +1,7 @@
 {
   "domain": "google_cloud_iot",
   "name": "Google IoT",
+  "version": "1.0.1",
   "documentation": "",
   "dependencies": ["mqtt", "mqtt_refresh"],
   "requirements": [],
